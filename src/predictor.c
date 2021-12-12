@@ -135,8 +135,8 @@ init_predictor()
 
     case CUSTOM:
       ghistoryBits = 13; 
-      lhistoryBits = 11; 
-      pcIndexBits = 11; 
+      lhistoryBits = 10; 
+      pcIndexBits = 10; 
       global_mask = mask(ghistoryBits);
       table_size = calculate_table_size(ghistoryBits);
       //Choicer
