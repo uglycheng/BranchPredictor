@@ -114,6 +114,7 @@ init_predictor()
     case GSHARE:
       gshare_history_table = (uint8_t*) malloc(sizeof(uint8_t)*table_size);
       for(int i=0;i<table_size;i++){gshare_history_table[i]=1;}
+      break;
     case TOURNAMENT:
       //Choicer
       choicer_table = (uint8_t*) malloc(sizeof(uint8_t)*table_size);
@@ -130,9 +131,32 @@ init_predictor()
       table_size = calculate_table_size(pcIndexBits);
       local_bht = (uint32_t*) malloc(sizeof(uint32_t)*table_size);
       for(int i=0;i<table_size;i++){local_bht[i]=0;}
+      break;
 
-    // case CUSTOM:
-    break;
+    case CUSTOM:
+      ghistoryBits = 13; 
+      lhistoryBits = 11; 
+      pcIndexBits = 11; 
+      global_mask = mask(ghistoryBits);
+      table_size = calculate_table_size(ghistoryBits);
+      //Choicer
+      choicer_table = (uint8_t*) malloc(sizeof(uint8_t)*table_size);
+      for(int i=0;i<table_size;i++){choicer_table[i]=2;}
+      //Global
+      gshare_history_table = (uint8_t*) malloc(sizeof(uint8_t)*table_size);
+      for(int i=0;i<table_size;i++){gshare_history_table[i]=1;}
+      //Local
+      local_mask = mask(lhistoryBits);
+      pc_mask = mask(pcIndexBits);
+      table_size = calculate_table_size(lhistoryBits);
+      local_pht = (uint8_t*) malloc(sizeof(uint8_t)*table_size);
+      for(int i=0;i<table_size;i++){local_pht[i]=1;}
+      table_size = calculate_table_size(pcIndexBits);
+      local_bht = (uint32_t*) malloc(sizeof(uint32_t)*table_size);
+      for(int i=0;i<table_size;i++){local_bht[i]=0;}
+      break;
+
+    // break;
   }
 }
 
@@ -162,6 +186,7 @@ make_prediction(uint32_t pc)
       }else{
         return NOTTAKEN;
       }
+
     case TOURNAMENT:
       global_index = generate_masked_index(global_history,global_mask);
       counter_value = choicer_table[global_index];
@@ -177,8 +202,23 @@ make_prediction(uint32_t pc)
       }else{
         return NOTTAKEN;
       }
+    case CUSTOM:
+      global_index = generate_gshare_index(pc,global_history,global_mask);
+      counter_value = choicer_table[global_index];
+      if(if_significant_bit_is_1(counter_value)){
+        prediction = gshare_history_table[global_index];
+      }else{
+        local_pc_index = generate_masked_index(pc,pc_mask);
+        local_pattern_index = generate_masked_index(local_bht[local_pc_index],local_mask);
+        prediction = local_pht[local_pattern_index]; 
+      }
+      if(if_significant_bit_is_1(prediction)){
+        return TAKEN;
+      }else{
+        return NOTTAKEN;
+      }
 
-    // case CUSTOM:
+
     default:
       break;
   }
@@ -217,6 +257,7 @@ train_predictor(uint32_t pc, uint8_t outcome)
       updated_counter = update_counter(counter_value,outcome);
       gshare_history_table[global_index] = updated_counter;
       global_history = update_history(global_history,outcome);
+      break;
     case TOURNAMENT:
       //Update Global
       global_index = generate_masked_index(global_history,global_mask);
@@ -246,8 +287,40 @@ train_predictor(uint32_t pc, uint8_t outcome)
       if(global_prediction != local_prediction){
         updated_choice = update_counter(choice,global_prediction==outcome);
         choicer_table[global_index] = updated_choice;
-      }     
-    // case CUSTOM:
+      }  
+      break;   
+    case CUSTOM:
+      //Update Global
+      global_index = generate_gshare_index(pc,global_history,global_mask);
+      counter_value = gshare_history_table[global_index];
+      updated_counter = update_counter(counter_value,outcome);
+      gshare_history_table[global_index] = updated_counter;
+      global_history = update_history(global_history,outcome);
+      //Update Local
+      local_pc_index = generate_masked_index(pc,pc_mask);
+      local_pattern_index = generate_masked_index(local_bht[local_pc_index],local_mask);
+      local_counter = local_pht[local_pattern_index];
+      updated_local_counter = update_counter(local_counter,outcome);
+      local_pht[local_pattern_index] = updated_local_counter;
+      local_bht[local_pc_index] = update_history(local_bht[local_pc_index],outcome);
+      //Update Choice
+      choice = choicer_table[global_index];
+      if(if_significant_bit_is_1(counter_value)){
+        global_prediction = TAKEN;
+      }else{
+        global_prediction = NOTTAKEN;
+      }
+      if(if_significant_bit_is_1(local_counter)){
+        local_prediction = TAKEN;
+      }else{
+        local_prediction = NOTTAKEN;
+      }
+      if(global_prediction != local_prediction){
+        updated_choice = update_counter(choice,global_prediction==outcome);
+        choicer_table[global_index] = updated_choice;
+      }  
+      break;   
+
     default:
       break;
   }
