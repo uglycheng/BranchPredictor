@@ -11,3 +11,4 @@ echo "PREDICT mm_1:"
 bunzip2 -kc ../traces/mm_1.bz2 | ./predictor --$1
 echo "PREDICT mm_2:"
 bunzip2 -kc ../traces/mm_2.bz2 | ./predictor --$1
+make clean
