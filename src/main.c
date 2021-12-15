@@ -47,8 +47,12 @@ handle_option(char *arg)
   } else if (!strncmp(arg,"--tournament:",13)) {
     bpType = TOURNAMENT;
     sscanf(arg+13,"%d:%d:%d", &ghistoryBits, &lhistoryBits, &pcIndexBits);
-  } else if (!strcmp(arg,"--custom")) {
+  } else if (!strcmp(arg,"--TEG")) {
     bpType = CUSTOM;
+  } else if (!strcmp(arg,"--TG")) {
+    bpType = TG;
+  }else if (!strcmp(arg,"--TE")) {
+    bpType = TE;
   } else if (!strcmp(arg,"--verbose")) {
     verbose = 1;
   } else {
@@ -132,10 +136,10 @@ main(int argc, char *argv[])
   float mispredict_rate = 100*((float)mispredictions / (float)num_branches);
   // printf("%d",num_branches);
   printf("Misprediction Rate: %7.3f\n", mispredict_rate);
-
+  // printf("efefefefefefkkkkkkkkkk");
   // Cleanup
   fclose(stream);
   free(buf);
-
+  // printf("efefefefefef");
   return 0;
 }
